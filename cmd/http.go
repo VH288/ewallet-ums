@@ -5,6 +5,7 @@ import (
 
 	"ewallet-ums/helpers"
 	"ewallet-ums/internal/api"
+	"ewallet-ums/internal/interfaces"
 	"ewallet-ums/internal/repository"
 	"ewallet-ums/internal/services"
 
@@ -24,10 +25,24 @@ func ServeHTTP() {
 	}
 }
 
+func route(r *gin.Engine, dependency Dependency) {
+	r.GET("/health", dependency.HealthcheckAPI.HealthcheckHandlerHTTP)
+
+	userV1 := r.Group("/user/v1")
+	userV1.POST("/register", dependency.RegisterAPI.Register)
+	userV1.POST("/login", dependency.LoginAPI.Login)
+
+	userV1WithAuth := userV1.Use(dependency.MiddlewareValidateAuth)
+	userV1WithAuth.DELETE("/logout", dependency.LogoutAPI.Logout)
+}
+
 type Dependency struct {
-	HealthcheckAPI *api.Healthcheck
-	RegisterAPI    *api.RegisterHandler
-	LoginAPI       *api.LoginHandler
+	UserRepo interfaces.IUserRepository
+
+	HealthcheckAPI interfaces.IHealthcheckHandler
+	RegisterAPI    interfaces.IRegisterHandler
+	LoginAPI       interfaces.ILoginHandler
+	LogoutAPI      interfaces.ILogoutHandler
 }
 
 func dependencyInject() Dependency {
@@ -56,17 +71,19 @@ func dependencyInject() Dependency {
 		LoginService: loginSvc,
 	}
 
+	logoutSvc := &services.LogoutService{
+		UserRepo: userRepo,
+	}
+
+	logoutAPI := &api.LogoutHandler{
+		LogoutService: logoutSvc,
+	}
+
 	return Dependency{
+		UserRepo:       userRepo,
 		HealthcheckAPI: healthcheckAPI,
 		RegisterAPI:    registerAPI,
 		LoginAPI:       loginAPI,
+		LogoutAPI:      logoutAPI,
 	}
-}
-
-func route(r *gin.Engine, dependency Dependency) {
-	r.GET("/health", dependency.HealthcheckAPI.HealthcheckHandlerHTTP)
-
-	userV1 := r.Group("/user/v1")
-	userV1.POST("/register", dependency.RegisterAPI.Register)
-	userV1.POST("/login", dependency.LoginAPI.Login)
 }
