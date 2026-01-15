@@ -29,12 +29,12 @@ func (s *LoginService) Login(ctx context.Context, req models.LoginRequest) (mode
 		return resp, fmt.Errorf("incorrect password, %v", err)
 	}
 
-	token, err := helpers.GenerateToken(ctx, userDetail.ID, userDetail.Username, userDetail.FullName, "token", now)
+	token, err := helpers.GenerateToken(ctx, userDetail.ID, userDetail.Username, userDetail.FullName, "token", userDetail.Email, now)
 	if err != nil {
 		return resp, fmt.Errorf("failed to generate token, %v", err)
 	}
 
-	refreshToken, err := helpers.GenerateToken(ctx, userDetail.ID, userDetail.Username, userDetail.FullName, "refresh_token", now)
+	refreshToken, err := helpers.GenerateToken(ctx, userDetail.ID, userDetail.Username, userDetail.FullName, "refresh_token", userDetail.Email, now)
 	if err != nil {
 		return resp, fmt.Errorf("failed to generate refresh token, %v", err)
 	}
